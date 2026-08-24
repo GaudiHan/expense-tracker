@@ -13,6 +13,12 @@ expense-tracker/
 
 ---
 
+## TO-DO
+
+1. Fix UI for **<h2>Add an expense<h2>**
+
+---
+
 ## 1. Install these first
 
 | Tool | Why | Check |
