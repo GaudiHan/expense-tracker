@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/api.ts","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/AuthForm.tsx","./src/components/CategoryChart.tsx","./src/components/ExpenseForm.tsx","./src/components/ExpenseList.tsx"],"version":"5.9.3"}

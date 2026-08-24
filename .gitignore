@@ -1,0 +1,14 @@
+*.log
+.DS_Store
+.idea/
+.vscode/
+gh-deployer-key.json
+
+# Node / frontend
+node_modules/
+dist/
+.env
+
+# Java / backend
+target/
+*.class
