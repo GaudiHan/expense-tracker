@@ -247,7 +247,7 @@ frontend-only commit won't redeploy the backend and vice versa.
 - **Frontend deploy fails with a missing/empty `FIREBASE_SERVICE_ACCOUNT`
   secret**; `firebase init hosting:github` may have named the secret
   `FIREBASE_SERVICE_ACCOUNT_<PROJECT_ID>` instead. Check the exact name in
-  GitHub → Settings → Secrets and update the `firebaseServiceAccount:` line
+  GitHub > Settings > Secrets and update the `firebaseServiceAccount:` line
   in `frontend-deploy.yml` to match, rather thanhaving duplicate secret.
 - **Cloud Run deploy fails with a permissions error**; double check the three
   `add-iam-policy-binding` roles above were applied to the exact service
