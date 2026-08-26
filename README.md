@@ -197,61 +197,62 @@ frontend-only commit won't redeploy the backend and vice versa.
 - $0/month production cost
 
 **Application design**
-- **Layered backend architecture**: controller > service > repository,
-  mirroring the pattern from the Task Manager API project, this time in Java/Spring.
+- **Layered backend architecture**: controller > service > repository.
+  This mirror the pattern from the other project (Task Manager API), 
+  but this time done in in Java/Spring.
 - **Stateless JWT auth** with BCrypt password hashing and a security filter
-  chain, rather than session cookies — appropriate for a decoupled SPA + API.
-- **Resource-ownership checks return 404, not 403**, on cross-user access —
-  same defensive pattern as the C++ project, to avoid leaking resource existence.
+  chain, instead of session cookies. Should be appropriate for a decoupled SPA + API.
+- **Resource-ownership checks return 404, not 403** on cross-user access.
+  Same defensive pattern as the Task Manager API project, 
+  to avoid leaking resource existence.
 
 **Cloud infrastructure & delivery**
-- **Infrastructure provisioned via CLI, not console clicking** — Artifact
+- **Infrastructure provisioned via CLI, not console clicking**; artifact
   Registry repo and IAM service account created and bound entirely through
   scripted `gcloud` commands, so the setup is reproducible and auditable
   rather than a one-off set of manual clicks.
-- **Least-privilege IAM** — the GitHub Actions deployer service account is
+- **Least-privilege IAM**: the GitHub Actions deployer service account is
   granted exactly three scoped roles (`run.admin`, `artifactregistry.writer`,
   `iam.serviceAccountUser`) rather than a broad project-owner role.
-- **Zero credentials in source control** — GCP and Firebase service account
+- **Zero credentials in source control**; GCP and Firebase service account
   keys exist only as encrypted GitHub Actions secrets, injected at deploy
-  time; nothing sensitive is ever committed.
-- **Path-filtered, independently-deployable CI/CD** — two decoupled
-  pipelines (`backend-deploy.yml`, `frontend-deploy.yml`), each gated by
-  tests passing first, so a frontend-only change can't trigger an
-  unnecessary backend redeploy and vice versa.
-- **Cost-safe, scale-to-zero architecture** — Cloud Run scales to zero (no
+  time (so basically nothing sensitive is committed).
+- **Path-filtered, independently-deployable CI/CD**; two decoupled
+  pipelines (`backend-deploy.yml` and `frontend-deploy.yml`), each of them 
+  gated by tests passing first. Hence a frontend-only change can't trigger an
+  unnecessary backend redeploy (and vice versa).
+- **Cost-safe, scale-to-zero architecture**; Cloud Run scales to zero (no
   idle compute cost) and Neon's free Postgres tier has no time limit, so the
-  whole stack — a live, publicly reachable full-stack app — runs
-  indefinitely at $0 steady-state cost.
+  whole stack should run indefinitely for free, and stay live as a publicly 
+  reachable full-stack app.
 - **Diagnosed and resolved real multi-cloud identity issues during setup**,
   including a billing-activation precondition failure and a global
   Firebase/GCP project-ID namespace collision that caused Hosting and
-  Cloud Run to land in two distinct underlying projects — adapting the
-  deploy configuration accordingly rather than starting over.
+  Cloud Run to land in two distinct underlying projects (i.e. adapt the
+  deploy configuration accordingly rather than start over).
 
-## Troubleshooting
+## Troubleshooting (and problems encountered personally)
 
-- **`FAILED_PRECONDITION: Billing account for project '...' is not found`**
-  — a billing account isn't linked to the project `gcloud` is currently
+- **`FAILED_PRECONDITION: Billing account for project '...' is not found`**; 
+  a billing account isn't linked to the project `gcloud` is currently
   pointed at. Run `gcloud config get-value project` to check which project
   is active, `gcloud projects list` to see all your projects, and link
   billing to the correct one at
   console.cloud.google.com/billing/linkedaccount before retrying.
 - **Firebase project ID in `.firebaserc` doesn't match your GCP project ID**
-  — not a bug. Firebase IDs are globally unique across all users, so yours
-  may have been reassigned with a suffix. Use the ID actually in
-  `.firebaserc` for `FIREBASE_PROJECT_ID` and your Hosting URL; Hosting and
-  Cloud Run don't need to share a project.
+  is not a bug. Firebase IDs are globally unique across all users, so your 
+  project ID mayv'e been reassigned with a suffix. Use the ID in
+  `.firebaserc` for `FIREBASE_PROJECT_ID` and your Hosting URL (Hosting and
+  Cloud Run don't need to share a project).
 - **Frontend deploy fails with a missing/empty `FIREBASE_SERVICE_ACCOUNT`
-  secret** — `firebase init hosting:github` may have named the secret
+  secret**; `firebase init hosting:github` may have named the secret
   `FIREBASE_SERVICE_ACCOUNT_<PROJECT_ID>` instead. Check the exact name in
   GitHub → Settings → Secrets and update the `firebaseServiceAccount:` line
-  in `frontend-deploy.yml` to match, rather than creating a duplicate secret.
-- **Cloud Run deploy fails with a permissions error** — double check the three
-  `add-iam-policy-binding` roles above were applied to the *exact* service
+  in `frontend-deploy.yml` to match, rather thanhaving duplicate secret.
+- **Cloud Run deploy fails with a permissions error**; double check the three
+  `add-iam-policy-binding` roles above were applied to the exact service
   account email used in `GCP_SA_KEY`.
-- **Frontend loads but API calls fail (CORS)** — `CORS_ALLOWED_ORIGINS` on the
-  backend must exactly match the frontend's origin, including `https://` and
-  no trailing slash.
-- **Local backend won't start** — check nothing else is bound to port 8080,
+- **Frontend loads but API calls fail (CORS)**; `CORS_ALLOWED_ORIGINS` on the
+  backend gotta match the frontend's origin.
+- **Local backend won't start**; check nothing else is bound to port 8080,
   or set `PORT` in your environment.
