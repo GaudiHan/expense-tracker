@@ -1,4 +1,4 @@
-# Ledger — Expense Tracker
+# Ledger - Expense Tracker
 
 A small full-stack app: React + TypeScript frontend, Spring Boot (Java) backend,
 Postgres database, deployed on Google Cloud Run + Firebase Hosting with a
@@ -23,36 +23,21 @@ expense-tracker/
 | [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Build the backend container | `docker -v` |
 | [Git](https://git-scm.com/) | Version control | `git --version` |
 | [gcloud CLI](https://cloud.google.com/sdk/docs/install) | Deploy to Cloud Run | `gcloud version` |
-| [Firebase CLI](https://firebase.google.com/docs/cli) | Deploy the frontend — `npm install -g firebase-tools` | `firebase --version` |
+| [Firebase CLI](https://firebase.google.com/docs/cli) | Deploy the frontend (`npm install -g firebase-tools`) | `firebase --version` |
 
-You'll also want a free [Neon](https://neon.tech) account (Postgres) and a free
-[Google Cloud](https://console.cloud.google.com) account. Neither requires a
-credit card for the tiers this project uses — **except** that Google Cloud
-still requires a billing account to be *linked* to your project before it
-will activate Cloud Run and Artifact Registry, even if you never leave the
-free tier. See 3b for details.
+You will also want a free [Neon](https://neon.tech) account (Postgres) and a free
+[Google Cloud](https://console.cloud.google.com) account. Neither of them requires a
+credit card for this project's uses.
+
+**Exception:** Google Cloud still needs a billing account to be 
+linked to your project to activate Cloud Run and Artifact Registry, 
+even if you never leave the free tier. See 3b for details.
 
 ---
 
-## 2. Run it locally first
+## 2. Run locally first
 
-> **Windows notes:** commands throughout this README use macOS/Linux
-> syntax. On Windows:
-> - `cp` → `copy` (PowerShell/cmd)
-> - Multi-line commands use `\` for line continuation; in PowerShell use
->   `` ` `` (backtick) instead
-> - The `curl -d '...'` examples with unescaped double quotes can fail in
->   PowerShell. Either escape the inner quotes (`\"`), or use
->   `Invoke-RestMethod` instead:
->   ```powershell
->   Invoke-RestMethod -Method Post -Uri http://localhost:8080/api/auth/register `
->     -ContentType "application/json" `
->     -Body '{"email":"you@example.com","password":"password123"}'
->   ```
-> - `openssl` (used later for `JWT_SECRET`) often isn't installed by
->   default; a PowerShell-only alternative is given in Step 4.
-
-**Backend** (uses an in-memory H2 database by default — no setup needed):
+**Backend**:
 
 ```bash
 cd backend
@@ -67,7 +52,7 @@ curl -X POST http://localhost:8080/api/auth/register \
   -d '{"email":"you@example.com","password":"password123"}'
 ```
 
-**Frontend**, in a second terminal:
+**Frontend** (in a second terminal):
 
 ```bash
 cd frontend
@@ -76,38 +61,38 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`, register, and start adding expenses.
+Open `http://localhost:5173`, register, then you can start adding expenses.
 
 ---
 
-## 3. Set up the cloud pieces (one-time)
+## 3. Set up the cloud (one-time)
 
 ### 3a. Neon (Postgres, free forever)
 1. Create a project at [neon.tech](https://neon.tech).
-2. Copy the connection string it gives you. Split it into the three pieces
-   the backend expects: `DB_URL` (as a JDBC url, e.g.
-   `jdbc:postgresql://<host>/<db>?sslmode=require`), `DB_USERNAME`, `DB_PASSWORD`.
-3. Keep these somewhere safe — you'll add them as GitHub secrets in step 4.
+2. Copy the connection string it gives you. Split it into the three pieces;
+   the backend expects: `DB_URL` (e.g.
+   `jdbc:postgresql://<host>/<db>?sslmode=require`), 
+   `DB_USERNAME`, `DB_PASSWORD`.
+3. Absolutely keep them somewhere safe, you will add them as 
+   GitHub secrets in the end (step 4).
 
 ### 3b. Google Cloud project
-1. Create a project at [console.cloud.google.com](https://console.cloud.google.com).
-   Note the **Project ID** it generates — it may not exactly match the name
-   you typed (GCP appends a suffix if your preferred ID is taken globally).
-   Use the exact Project ID for every command and secret below.
-2. **Link a billing account.** Go to
+1. Create a project at 
+   [console.cloud.google.com](https://console.cloud.google.com).
+   Note the **Project ID** it generates, it may not exactly match the name
+   you typed. **Use the exact Project ID for every command and secret below**.
+2. Link a billing account. Go to
    [console.cloud.google.com/billing](https://console.cloud.google.com/billing),
-   create/attach a billing account, and make sure it's linked to *this*
-   project (Billing → Account Management → Linked projects). This is
-   required before Cloud Run or Artifact Registry will activate, even
-   though this project stays within free-tier limits — GCP uses it as
-   identity verification, not a guarantee you'll be charged. Skipping this
-   step produces:
+   create/attach a billing account, and make sure it's linked to this
+   project (Billing > Account Management > Linked projects). This is
+   required before Cloud Run or Artifact Registry will activate, 
+   but the project should stay within free-tier limits. Skipping this
+   step for me produces:
    ```
    FAILED_PRECONDITION: Billing account for project '...' is not found.
    ```
-3. Enable these APIs (Console → APIs & Services → Enable), **on the project
-   you just linked billing to**:
-   `Cloud Run API`, `Artifact Registry API`.
+3. Enable these APIs (go to Console > APIs & Services > Enable) on the project
+   linked billing to. Find `Cloud Run API` and `Artifact Registry API`.
 4. Create an Artifact Registry Docker repo:
    ```bash
    gcloud auth login
@@ -116,7 +101,7 @@ Open `http://localhost:5173`, register, and start adding expenses.
      --repository-format=docker \
      --location=us-central1
    ```
-5. Create a service account for GitHub Actions to deploy with, and a JSON key:
+5. Create a service account for GitHub Actions to deploy with and a JSON key:
    ```bash
    gcloud iam service-accounts create gh-deployer \
      --display-name="GitHub Actions deployer"
@@ -136,46 +121,29 @@ Open `http://localhost:5173`, register, and start adding expenses.
    gcloud iam service-accounts keys create gh-deployer-key.json \
      --iam-account=gh-deployer@YOUR_PROJECT_ID.iam.gserviceaccount.com
    ```
-   Open `gh-deployer-key.json`, copy its full contents — you'll paste it into
-   a GitHub secret in step 4. **Delete the local file afterward**; don't commit it.
+   Open `gh-deployer-key.json`, copy its full contents, you will need this at
+   the end (step 4). **DELETE THE LOCAL FILE AFTERWARD; DO NOT COMMIT THIS**.
 
-### 3c. Firebase Hosting (free forever at this scale)
+### 3c. Firebase Hosting (should be free forever at this scale)
 1. In the [Firebase console](https://console.firebase.google.com), add your
    existing GCP project (Firebase can attach to a GCP project you already made).
 2. From `frontend/`, run `firebase login` then `firebase init hosting`,
-   selecting your project and `dist` as the public directory, and
-   configuring as a single-page app (yes). This overwrites `firebase.json`
-   and `.firebaserc` with your real project id — that's expected.
+   select your project, `dist` as the public directory. 
+   This overwrites `firebase.json` and `.firebaserc` with your real project id.
 
-   **⚠️ Check `.firebaserc` after this step.** Firebase project IDs are
-   globally unique across *every* Firebase user, not just your account. If
-   your GCP project ID is already taken as a Firebase ID by someone else,
-   Firebase silently assigns a *different* ID (typically your ID plus a
-   random suffix, e.g. `my-project-2026` → `my-project-20-7ac59`) instead
-   of erroring. Open `.firebaserc` and confirm the `"default"` value — if it
-   doesn't match your GCP project ID, Firebase is now a functionally
-   separate project from your Cloud Run backend (different project number).
-   This still works fine — Hosting and Cloud Run only need to talk over
-   HTTPS/CORS — but use the **actual value from `.firebaserc`**, not your
-   original GCP project ID, for `FIREBASE_PROJECT_ID` and your Hosting URL
-   everywhere below.
-3. Generate a service account for CI deploys:
+   **!!!Check `.firebaserc` after this step!!!** Firebase might assign a
+   different ID if your ID has already been taken by someone else, instead
+   of erroring. Open `.firebaserc` and confirm the `"default"` value.
+3. Generate service account for CI deploys:
    ```bash
    firebase init hosting:github
    ```
-   This walks you through creating a `FIREBASE_SERVICE_ACCOUNT_...` GitHub
-   secret automatically. **Note:** recent versions of the Firebase CLI name
-   this secret `FIREBASE_SERVICE_ACCOUNT_<PROJECT_ID>` rather than a plain
-   `FIREBASE_SERVICE_ACCOUNT` — check Settings → Secrets on GitHub for the
-   exact name it created, and update the `firebaseServiceAccount:` line in
-   `frontend-deploy.yml` to match. If you'd rather do it by hand, generate a
-   key from Firebase console → Project settings → Service accounts.
 
 ---
 
 ## 4. Add GitHub repo secrets
 
-Repo → Settings → Secrets and variables → Actions → New repository secret:
+Repo > Settings > Secrets and variables > Actions > New repository secret:
 
 | Secret | Value |
 |---|---|
@@ -184,11 +152,11 @@ Repo → Settings → Secrets and variables → Actions → New repository secre
 | `DB_URL` | Neon JDBC url |
 | `DB_USERNAME` | Neon username |
 | `DB_PASSWORD` | Neon password |
-| `JWT_SECRET` | Any long random string, e.g. output of `openssl rand -base64 32` (Windows without `openssl`: `[Convert]::ToBase64String((1..32 \| ForEach-Object { Get-Random -Maximum 256 }))` in PowerShell) |
+| `JWT_SECRET` | Long random string, e.g. output of `openssl rand -base64 32` |
 | `CORS_ALLOWED_ORIGINS` | Your Firebase Hosting URL, e.g. `https://your-project.web.app` |
 | `VITE_API_URL` | Your Cloud Run URL, e.g. `https://expense-tracker-api-xxxx.run.app` |
-| `FIREBASE_SERVICE_ACCOUNT_<PROJECT_ID>` | Auto-created by `firebase init hosting:github` — check GitHub → Settings → Secrets for the exact generated name, and match it in `frontend-deploy.yml`'s `firebaseServiceAccount:` line |
-| `FIREBASE_PROJECT_ID` | Your Firebase/GCP project id |
+| `FIREBASE_SERVICE_ACCOUNT_<PROJECT_ID>` | Auto-created by `firebase init hosting:github`; check GitHub > Settings > Secrets for the exact generated name, and match it in `frontend-deploy.yml` > `firebaseServiceAccount:` line |
+| `FIREBASE_PROJECT_ID` | Your Firebase project id |
 
 Note the slight chicken-and-egg step: deploy the backend once first (so you
 have a Cloud Run URL for `VITE_API_URL`), then deploy the frontend.
@@ -206,9 +174,9 @@ git push -u origin main
 ```
 
 Pushing to `main` triggers both workflows:
-- `.github/workflows/backend-deploy.yml` — runs tests, builds the Docker
+- `.github/workflows/backend-deploy.yml`, run tests, builds the Docker
   image, pushes it to Artifact Registry, deploys to Cloud Run.
-- `.github/workflows/frontend-deploy.yml` — builds the Vite app, deploys to
+- `.github/workflows/frontend-deploy.yml`, build the Vite app, deploys to
   Firebase Hosting.
 
 Each only runs when files under its respective folder change, so a
@@ -218,20 +186,18 @@ frontend-only commit won't redeploy the backend and vice versa.
 
 ## 6. What this demonstrates (and why it's built this way)
 
-**Measured metrics** *(so CV claims about this project are verifiable, not asserted)*
-- 641 lines of backend Java, 454 lines of frontend TypeScript/TSX, 7 REST endpoints
-- 8 automated backend tests (MockMvc integration tests), all passing —
-  covering the register→login flow, expense CRUD, input validation, and
+**Measured metrics**
+- 7 REST endpoints
+- 8 automated backend tests (MockMvc integration tests) all passing,
+  covering the register-login flow, expense CRUD, input validation, and
   the cross-user 404-not-403 ownership check described below
-- Cloud Run cold start: **15.55s** from idle vs. **0.33s** warm — the real
-  latency cost of scale-to-zero, worth stating rather than hiding
-- Lighthouse (production build): **97** Performance, **91** Accessibility,
-  **100** Best Practices, **82** SEO
-- **$0/month** production cost — Cloud Run scale-to-zero + Neon's free
-  Postgres tier, verified against actual GCP billing, not a projection
+- Cloud Run cold start: 15.55s from idle vs. 0.33s warm
+- Lighthouse (production build): 97 Performance, 91 Accessibility,
+  100 Best Practices, 82 SEO
+- $0/month production cost
 
 **Application design**
-- **Layered backend architecture** — controller → service → repository,
+- **Layered backend architecture**: controller > service > repository,
   mirroring the pattern from the Task Manager API project, this time in Java/Spring.
 - **Stateless JWT auth** with BCrypt password hashing and a security filter
   chain, rather than session cookies — appropriate for a decoupled SPA + API.
